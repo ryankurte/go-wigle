@@ -9,9 +9,13 @@ package wigle
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"net/http/cookiejar"
+	"net/http/httputil"
 	"net/url"
+
+	"github.com/google/go-querystring"
 )
 
 type WiGLE struct {
@@ -28,13 +32,7 @@ const (
 	LoginPassword = "credential_1"
 	LoginNoExpire = "noexpire"
 
-	QueryUrl      = "/gps/gps/main/confirmquery/"
-	QueryLatSouth = "latrange1"
-	QueryLatNorth = "latrange2"
-	QueryLngEast  = "longrange1"
-	QueryLngWest  = "longrange2"
-	QuerySsid     = "ssid"
-	QueryOffset   = "pagestart"
+	QueryUrl = "/gps/gps/main/confirmquery/"
 )
 
 func NewWiGLE() *WiGLE {
@@ -49,7 +47,20 @@ func NewWiGLE() *WiGLE {
 	return &wigle
 }
 
-func (gle *WiGLE) login(username, password string) error {
+type Request struct {
+	SSID   string `url:"ssid"`
+	Offset uint32 `url:"pagestart"`
+
+	LatNorth float64 `url:"latrange2"`
+	LatSouth float64 `url:"latrange1"`
+	LngEast  float64 `url:"longrange1"`
+	LngWest  float64 `url:"longrange2"`
+}
+
+type Response struct {
+}
+
+func (gle *WiGLE) Login(username, password string) error {
 	data := url.Values{}
 	data.Set(LoginUsername, username)
 	data.Set(LoginPassword, password)
@@ -59,6 +70,10 @@ func (gle *WiGLE) login(username, password string) error {
 	if err != nil {
 		return err
 	}
+
+	body, _ := httputil.DumpResponse(resp, true)
+
+	log.Printf("%s", string(body))
 
 	if len(resp.Cookies()) == 0 {
 		return fmt.Errorf("Error logging in: no cookie set")
